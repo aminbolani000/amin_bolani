@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - M.Suhaib Watches</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+        body { background-color: #f4f4f4; padding: 20px; color: #333; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0px 4px 10px rgba(0,0,0,0.1); }
+        h2 { text-align: center; margin-bottom: 20px; color: #111; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; }
+        button { background-color: #f39c12; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; width: 100%; }
+        button:hover { background-color: #d68910; }
+        .watch-list { margin-top: 30px; }
+        .watch-item { display: flex; justify-content: space-between; align-items: center; background: #fafafa; padding: 10px 15px; border: 1px solid #ddd; margin-bottom: 10px; border-radius: 5px; }
+        .delete-btn { background-color: #e74c3c; width: auto; padding: 5px 10px; font-size: 14px; }
+        .delete-btn:hover { background-color: #c0392b; }
+        .watch-thumb { width: 50px; height: 50px; object-fit: cover; border-radius: 5px; margin-right: 10px; }
+        .watch-info { display: flex; align-items: center; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Admin Panel - Add Watch</h2>
+        
+        <form id="add-watch-form">
+            <div class="form-group">
+                <label>Watch Name:</label>
+                <input type="text" id="name" required placeholder="e.g. Rolex Submariner">
+            </div>
+            <div class="form-group">
+                <label>Price (Rs):</label>
+                <input type="number" id="price" required placeholder="e.g. 15000">
+            </div>
+            <div class="form-group">
+                <label>Category:</label>
+                <select id="category" required>
+                    <option value="men">Men</option>
+                    <option value="women">Women</option>
+                    <option value="kids">Kids</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Upload Watch Image from Laptop:</label>
+                <input type="file" id="imageFile" accept="image/*" required>
+            </div>
+            <button type="submit">Add Watch to Store</button>
+        </form>
+
+        <div class="watch-list">
+            <h3>Manage Existing Watches</h3>
+            <div id="admin-watches-container" style="margin-top: 15px;">
+                <p>Loading products...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api/watches';
+
+        async function fetchAdminWatches() {
+            try {
+                const res = await fetch(API_URL);
+                const watches = await res.json();
+                const container = document.getElementById('admin-watches-container');
+                
+                if (watches.length === 0) {
+                    container.innerHTML = '<p>No watches found in database.</p>';
+                    return;
+                }
+
+                container.innerHTML = '';
+                watches.forEach(watch => {
+                    container.innerHTML += `
+                        <div class="watch-item">
+                            <div class="watch-info">
+                                <img src="http://localhost:3000${watch.image}" class="watch-thumb" alt="watch">
+                                <span><b>${watch.name}</b> (${watch.category.toUpperCase()}) - Rs ${watch.price}</span>
+                            </div>
+                            <button class="delete-btn" onclick="deleteWatch('${watch._id}')">Delete</button>
+                        </div>
+                    `;
+                });
+            } catch (err) {
+                console.error("Error loading watches:", err);
+            }
+        }
+
+        document.getElementById('add-watch-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            formData.append('name', document.getElementById('name').value);
+            formData.append('price', document.getElementById('price').value);
+            formData.append('category', document.getElementById('category').value);
+            formData.append('image', document.getElementById('imageFile').files[0]);
+
+            const res = await fetch(API_URL, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (res.ok) {
+                alert("Watch added successfully with image!");
+                document.getElementById('add-watch-form').reset();
+                fetchAdminWatches();
+            } else {
+                alert("Failed to add watch.");
+            }
+        });
+
+        async function deleteWatch(id) {
+            if (confirm("Are you sure you want to delete this watch?")) {
+                const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    fetchAdminWatches();
+                } else {
+    const errData = await res.json();
+    alert("Error: " + errData.error);
+}
+            }
+        }
+
+        fetchAdminWatches();
+    </script>
+</body>
+</html>
